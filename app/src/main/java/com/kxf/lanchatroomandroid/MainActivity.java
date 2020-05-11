@@ -36,15 +36,18 @@ public class MainActivity extends Activity {
     }
 
     private void startChart() {
+        showInfo("当前ip：" + IpUtils.getIPAddress(this));
         try {
             address = InetAddress.getByName("224.0.0.1");//组播地址：称为组播组的一组主机所共享的地址。组播地址的范围在224.0.0.0--- 239.255.255.255之间（都为D类地址 1110开头）。
             socket = new MulticastSocket(port);
+            socket.setBroadcast(true);
+            socket.setSoTimeout(60*1000);
             socket.joinGroup(address);
         } catch (Exception e) {
             e.printStackTrace();
         }
-//        WifiManager manager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
-//        lock = manager.createMulticastLock("test wifi");
+        WifiManager manager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+        lock = manager.createMulticastLock("test wifi");
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -94,14 +97,19 @@ public class MainActivity extends Activity {
         showInfo("接收端启动......");
 
         while (true) {
-
+            Log.d("MainActivity", "receive=");
             //2,创建数据包。
             byte[] buf = new byte[1024];
             DatagramPacket dp = new DatagramPacket(buf, buf.length);
 
 //            lock.acquire();
             //3,使用接收方法将数据存储到数据包中。
-            socket.receive(dp);//阻塞式的。
+            try {
+                socket.receive(dp);//阻塞式的。
+            } catch (Exception e) {
+                Log.d("MainActivity", "接收超时" + e.toString());
+                continue;
+            }
 //            lock.release();
 
             //4，通过数据包对象的方法，解析其中的数据,比如，地址，端口，数据内容。
@@ -109,7 +117,11 @@ public class MainActivity extends Activity {
             int port = dp.getPort();
             String text = new String(dp.getData(), 0, dp.getLength());
 
-            showInfo(ip + ":" + port + ":" + text);
+            if (!TextUtils.isEmpty(ip) && ip.equals(IpUtils.getIPAddress(this))){
+                Log.d("MainActivity", "自己发的消息不显示");
+            }else {
+                showInfo(ip + ":" + port + ":" + text);
+            }
         }
     }
 
@@ -118,13 +130,16 @@ public class MainActivity extends Activity {
 
         String host = IpUtils.getIPAddress(this);
         Log.d("MainActivity", "host=" + host);
+        Log.d("MainActivity", "socket.isBound()=" + socket.isBound());
+        Log.d("MainActivity", "socket.isClosed()=" + socket.isClosed());
+        Log.d("MainActivity", "socket.isConnected()=" + socket.isConnected());
 
         byte[] buf = msg.getBytes();
         DatagramPacket dp =
                 new DatagramPacket(buf, buf.length, address, port);
-//        lock.acquire();
+        lock.acquire();
         socket.send(dp);
-//        lock.release();
+        lock.release();
 
         showInfo("发送成功：" + msg);
         //4，关闭资源。
