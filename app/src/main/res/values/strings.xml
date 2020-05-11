@@ -1,3 +1,5 @@
 <resources>
-    <string name="app_name">LanChatRoomAndroid</string>
+    <string name="app_name">局域网通讯</string>
+    <string name="send">发送</string>
+    <string name="msg_not_null">消息不能为空</string>
 </resources>
