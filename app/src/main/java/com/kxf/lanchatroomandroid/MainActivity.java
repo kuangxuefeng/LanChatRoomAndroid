@@ -63,6 +63,8 @@ public class MainActivity extends Activity {
     private void initView() {
         tv_show = findViewById(R.id.tv_show);
         et_msg = findViewById(R.id.et_msg);
+
+        tv_show.setTextIsSelectable(true);
     }
 
     private void showInfo(final String info) {
